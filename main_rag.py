@@ -95,7 +95,7 @@ if prompt := st.chat_input(placeholder="Ask me a question!"):
     st.chat_message("user").write(prompt)
     st.session_state.messages.append({"type": "user", "content": prompt})
     with st.spinner(text="Thinking ..."):
-        with st.chat_message("assistant", avatar="🦜"):
+        with st.chat_message("assistant"):
             context_placeholder = st.empty()
             message_placeholder = st.empty()
             full_response = ""
