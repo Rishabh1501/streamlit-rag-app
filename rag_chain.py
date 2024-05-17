@@ -23,7 +23,8 @@ def get_expression_chain(
         azure_endpoint="https://rajrishabhrutuja.openai.azure.com/",
         azure_deployment="rishabh-gpt35-turbo",
         api_version="2024-02-01",
-        api_key=os.environ.get("OPENAI_KEY")
+        api_key=os.environ.get("OPENAI_KEY"),
+        temperature=0
     )
 
     
