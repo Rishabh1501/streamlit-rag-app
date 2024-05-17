@@ -6,7 +6,7 @@ from streamlit_feedback import streamlit_feedback
 from rag_chain import get_expression_chain
 from langchain_core.tracers.context import collect_runs
 from langchain_pinecone import PineconeVectorStore
-from langchain_openai import OpenAIEmbeddings, AzureOpenAIEmbeddings
+from langchain_openai import AzureOpenAIEmbeddings
 
 # Index Name
 index_name = "earnings-call"
@@ -86,8 +86,8 @@ if "messages" not in st.session_state.keys():
 
 for msg in st.session_state.messages:
     print("MESSAGE:", msg)
-    avatar = "🦜" if msg.get("type") == "ai" else None
-    with st.chat_message(msg.get("type"), avatar=avatar):
+    # avatar = "🦜" if msg.get("type") == "ai" else None
+    with st.chat_message(msg.get("type")):
         st.markdown(msg.get("content"))
 
 
@@ -116,7 +116,13 @@ if prompt := st.chat_input(placeholder="Ask me a question!"):
             for i in meta_data:
                 # print(i)
                 meta_data_string+="File Name:" + i["filename"] + " Page:" + str(i["page"]) + " Quarter:" + i["quarter"] + " Year:" + i["year"] + "\n"
-            context_string = "Context:\n```" + "\n".join(context) + "\n\n" + f"File References:\n{meta_data_string} ```"
+            context_count = 1
+            context_string = ""
+            for i in context:
+                context_string += f"Context-{context_count}: \n{i}\n\n"
+                context_count+=1
+            
+            context_string = "### References:\n```\n" + context_string + "\n\n" + f"File References:\n{meta_data_string} ```"
             context_placeholder.markdown(context_string)
             message_placeholder.markdown(full_response.get("answer"))
 
