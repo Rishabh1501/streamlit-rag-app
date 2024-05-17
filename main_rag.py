@@ -96,17 +96,28 @@ if prompt := st.chat_input(placeholder="Ask me a question!"):
     st.session_state.messages.append({"type": "user", "content": prompt})
     with st.spinner(text="Thinking ..."):
         with st.chat_message("assistant", avatar="🦜"):
+            context_placeholder = st.empty()
             message_placeholder = st.empty()
             full_response = ""
             # Define the basic input structure for the chains
             input_dict = {"query_str": prompt}
             with collect_runs() as cb:
                 full_response = st.session_state.chain.invoke(prompt)
+                # print(full_response)
                 st.session_state.messages.append({
                     "type": "ai",
                     "content": full_response.get("answer")
                 })
                 st.session_state.run_id = cb.traced_runs[0].id
+            context = [document.page_content for document in full_response.get("context_str")]
+            meta_data = [document.metadata for document in full_response.get("context_str")]
+            # context_placeholder.markdown("```" + "\n".join(context) + "```")
+            meta_data_string = ""
+            for i in meta_data:
+                # print(i)
+                meta_data_string+="File Name:" + i["filename"] + " Page:" + str(i["page"]) + " Quarter:" + i["quarter"] + " Year:" + i["year"] + "\n"
+            context_string = "Context:\n```" + "\n".join(context) + "\n\n" + f"File References:\n{meta_data_string} ```"
+            context_placeholder.markdown(context_string)
             message_placeholder.markdown(full_response.get("answer"))
 
 if st.session_state.get("run_id"):
