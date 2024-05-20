@@ -29,7 +29,10 @@ def get_expression_chain(
 
     
     def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
+        return "\n\n".join(doc[0].page_content for doc in docs)
+
+    def similarity_func(params):
+        return retriever.similarity_search_with_score(**params)
 
     rag_chain_from_docs = (
         RunnablePassthrough.assign(context_str=(lambda x: format_docs(x["context_str"])))
@@ -39,6 +42,6 @@ def get_expression_chain(
     )
 
     rag_chain_with_source = RunnableParallel(
-        {"context_str": retriever, "query_str": RunnablePassthrough()}
+        {"context_str": similarity_func, "query_str": RunnablePassthrough()}
     ).assign(answer=rag_chain_from_docs)
     return rag_chain_with_source
