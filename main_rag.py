@@ -66,14 +66,14 @@ if "metadata" not in st.session_state.keys():
 
 # Initializing Query Engine
 if "retriever" not in st.session_state.keys():
-    st.session_state.retriever = st.session_state.index.as_retriever(search_kwargs={"filter": st.session_state.metadata, "k": 4})
-    st.session_state.chain = get_expression_chain(retriever=st.session_state.retriever)
+    # st.session_state.retriever = st.session_state.index.as_retriever(search_kwargs={"filter": st.session_state.metadata, "k": 4})
+    st.session_state.chain = get_expression_chain(retriever=st.session_state.index)
 
 # Updating filters and chat engine if metadata is updated and updating session metadata also
 if st.session_state.metadata != metadata:
     st.session_state.metadata = metadata
-    st.session_state.retriever = st.session_state.index.as_retriever(search_kwargs={"filter": st.session_state.metadata, "k": 4})
-    st.session_state.chain = get_expression_chain(retriever=st.session_state.retriever)
+    # st.session_state.retriever = st.session_state.index.as_retriever(search_kwargs={"filter": st.session_state.metadata, "k": 4})
+    st.session_state.chain = get_expression_chain(retriever=st.session_state.index)
 
 st.sidebar.markdown("## Feedback Scale")
 feedback_option = (
@@ -100,30 +100,45 @@ if prompt := st.chat_input(placeholder="Ask me a question!"):
             message_placeholder = st.empty()
             full_response = ""
             # Define the basic input structure for the chains
-            input_dict = {"query_str": prompt}
+            input_dict = {"query":prompt,
+                          "k":4, 
+                          "filter":{"filename":file_name+".pdf","year":year,"quarter":quarter}}
             with collect_runs() as cb:
-                full_response = st.session_state.chain.invoke(prompt)
+                full_response = st.session_state.chain.invoke(input_dict)
                 # print(full_response)
                 st.session_state.messages.append({
                     "type": "ai",
                     "content": full_response.get("answer")
                 })
                 st.session_state.run_id = cb.traced_runs[0].id
-            context = [document.page_content for document in full_response.get("context_str")]
-            meta_data = [document.metadata for document in full_response.get("context_str")]
-            # context_placeholder.markdown("```" + "\n".join(context) + "```")
-            meta_data_string = ""
-            for i in meta_data:
-                # print(i)
-                meta_data_string+="File Name:" + i["filename"] + " Page:" + str(i["page"]) + " Quarter:" + i["quarter"] + " Year:" + i["year"] + "\n"
+            # context = [document.page_content for document in full_response.get("context_str")[0]]
+            # meta_data = [document.metadata for document in full_response.get("context_str")[0]]
+            # # context_placeholder.markdown("```" + "\n".join(context) + "```")
+            # similarity_score = full_response.get("context_str")[0]
+            # meta_data_string = ""
             context_count = 1
             context_string = ""
-            for i in context:
-                context_string += f"Context-{context_count}: \n{i}\n\n"
+            for i in full_response.get("context_str"):
+                meta_data_response = i[0].metadata
+                # print(meta_data_response["filename"])
+                # context_string += f"Context-{context_count}: <br>"+i[0].page_content+"\n\n" + "File References:"+ "<br>File Name:" + meta_data_response["filename"] + "<br>Page:" + str(meta_data_response["page"]) + "<br>Quarter:" + meta_data_response["quarter"] + "\nYear:" + meta_data_response["year"] + "<br>Similarity Score: "+str(round(i[1],3)*100)+"% <br><br><hr>"
+                context_string+="""
+**Context-{0}**:    
+{1}
+
+**File References**:      
+- File Name: {2}
+- Page: {3}
+- Quarter: {4}
+- Year: {5}
+
+**Similarity Score**: {6}%    
+***
+                """.format(context_count,i[0].page_content, meta_data_response["filename"], meta_data_response["page"], meta_data_response["quarter"], meta_data_response["year"], str(round(i[1],3)*100))
                 context_count+=1
             
-            context_string = "### References:\n```\n" + context_string + "\n\n" + f"File References:\n{meta_data_string} ```"
-            context_placeholder.markdown(context_string)
+            print(context_string)
+            context_placeholder.markdown("### References:\n"+f"{context_string}")
             message_placeholder.markdown(full_response.get("answer"))
 
 if st.session_state.get("run_id"):
